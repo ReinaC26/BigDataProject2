@@ -22,7 +22,7 @@ drug = (
 )
 # Query 1
 def query1(edges_rdd):
-    # Filters edges for gene and disease separately, keeping only the source and target ids as pairs
+    # Filters edges for gene and disease relationships separately
     gene_edges = {"CbG", "CdG", "CuG"}
     disease_edges = {"CtD", "CpD"}
     gene = edges_rdd.filter(lambda parts: parts[1] in gene_edges)
@@ -57,6 +57,7 @@ def query1(edges_rdd):
 
 def query2(edges_rdd):
     disease_edges = {"CtD", "CpD"}
+    # Filter edges for disease relationships
     disease = edges_rdd.filter(lambda parts: parts[1] in disease_edges)
 
     # For each disease, count the number of drugs that treat it
@@ -71,13 +72,18 @@ def query2(edges_rdd):
     print("\n")
 
 def query3(joined):
-    # Combine/Join the drug RDD with the gene and disease counts
+    # Reuse aggregated results from Query 1 to avoid recomputing the gene and disease counts
+    # Sort by gene count and get the top 5 drug names
     query3_result = joined.sortBy(lambda x: x[1][0], ascending=False).take(5)
     print("Query 3 - Top 5 drug names sorted by number of genes:")
     for drug_id, (gc, dc) in query3_result:
-        drug_name = drug.lookup(drug_id)[0]
+        drug_name = drug.lookup(drug_id)[0]  # lookup the drug name using the drug RDD
         print(f"{drug_name} -> {gc}")
 
+# Run all queries
 joined = query1(edges)
 query2(edges)
 query3(joined)
+
+# Exit the SparkContext
+sc.stop()
